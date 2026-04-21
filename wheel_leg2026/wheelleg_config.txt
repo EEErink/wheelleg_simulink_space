@@ -1,0 +1,105 @@
+#include "InfantryLauncher.hpp"
+#include "app_framework.hpp"
+#include "libxr.hpp"
+
+// Module headers
+#include "AtomImuCan.hpp"
+#include "BlinkLED.hpp"
+#include "BMI088.hpp"
+#include "BuzzerAlarm.hpp"
+#include "Chassis.hpp"
+#include "CMD.hpp"
+#include "DMMotor.hpp"
+#include "DR16.hpp"
+#include "EventBinder.hpp"
+#include "Gimbal.hpp"
+#include "HostData.hpp"
+#include "IST8310.hpp"
+#include "Launcher.hpp"
+#include "LegVmc.hpp"
+#include "MadgwickAHRS.hpp"
+#include "Motor.hpp"
+#include "PowerControl.hpp"
+#include "RMMotor.hpp"
+#include "SharedTopic.hpp"
+#include "SharedTopicClient.hpp"
+#include "SuperPower.hpp"
+#include "Wheelleg.hpp"
+
+static void XRobotMain(LibXR::HardwareContainer &hw) {
+  using namespace LibXR;
+  ApplicationManager appmgr;
+
+  // Auto-generated module instantiations
+  static BlinkLED blink_led(hw, appmgr, 250);
+  static BMI088 BMI088_0(hw, appmgr, BMI088::GyroFreq::GYRO_1000HZ_BW116HZ, BMI088::AcclFreq::ACCL_800HZ, BMI088::GyroRange::DEG_1000DPS, BMI088::AcclRange::ACCL_24G, {1.0, 0.0, 0.0, 0.0}, {0.15, 1.0, 0.1, 0.0, 0.3, 1.0, false}, "bmi088_gyro", "bmi088_accl", 45, 2048);
+  static MadgwickAHRS MadgwickAHRS_0(hw, appmgr, 0.033, "bmi088_gyro", "bmi088_accl", "ahrs_quaternion", "ahrs_euler", 2048);
+  static BuzzerAlarm BuzzerAlarm_0(hw, appmgr, 5000, 300, 300);
+  static CMD cmd(hw, appmgr, CMD::Mode::CMD_OP_CTRL, "chassis_cmd", "gimbal_cmd", "launcher_cmd");
+
+  static RMMotor motor_pit(hw, appmgr, {RMMotor::Model::MOTOR_GM6020, false, 0x205, "can2"});
+  static RMMotor motor_yaw(hw, appmgr, {RMMotor::Model::MOTOR_GM6020, true, 0x20A, "can2"});
+  static RMMotor left_wheel(hw, appmgr, {RMMotor::Model::MOTOR_M3508, false, 0x204, "can2"});
+  static RMMotor right_wheel(hw, appmgr, {RMMotor::Model::MOTOR_M3508, false, 0x204, "can1"});
+  static RMMotor motor_fric_0(hw, appmgr, {RMMotor::Model::MOTOR_M3508, true, 0x203, "can1"});
+  static RMMotor motor_fric_1(hw, appmgr, {RMMotor::Model::MOTOR_M3508, false, 0x202, "can1"});
+
+  static RMMotor motor_trig(hw, appmgr, {RMMotor::Model::MOTOR_M2006, false, 0x201, "can1"});
+  static DR16 dr16(hw, appmgr, cmd, 1536);
+  static AtomImuCan AtomImuCan_0(hw, appmgr, {10, "can2"});
+  static Launcher<InfantryLauncher> launcher(hw, appmgr, &motor_fric_0, &motor_fric_1, nullptr, nullptr, &motor_trig, 1536, {20.0, 5.0, 0.5, 0.0, 0.0, 0.0, false}, {1.0, 0.1, 0.0, 0.0, 0.0, 1.0, false}, {0.8, 0.0005, 0.0, 0.0, 0.0, 0.01, false}, {0.8, 0.0005, 0.0, 0.0, 0.0, 0.01, false}, {1.0, 0.0, 0.0, 0.0, 0.0, 1.0, false}, {1.0, 0.0, 0.0, 0.0, 0.0, 1.0, false}, {6000.0, 0.0, 36.0, 10, 5.0}, &cmd);
+  static Gimbal gimbal(hw, appmgr, cmd, 1536, {1.0, 45.0, 0.0, 0.00, 0.0, 0.0, true}, {1.0, 0.9, 0.0, 0.0, 0.0, 0.0, false}, {1.0, 40.0, 0.0, 0.0, 0.0, 0.0, false}, {1.0, 1.1, 0.0, 0.0, 0.0, 0.0, false}, &motor_pit, &motor_yaw, 3.1, 2.3, 0.005, 0.015, 0.0, 2.785, false);
+
+static Wheelleg Wheelleg(hw, appmgr, cmd, 4608, {0.21, 0.21, 0.25, 0.25, 0.0}, {0.21, 0.21, 0.25, 0.25, 0.0}, {1.0, 800.0, 0.0, .0, 1.0, 300.0, false}, {1.0, 800.0, 0.0, .0, 1.0, 300.0, false}, {1.0, 15.0, 0.0, 0.0, 1.0, 5.0, true}, {1.0, 15.0, 0.0, 0.0, 1.0, 5.0, true}, {800.0, 1.0, 0.1, 0.4, 0.0, 100.0, false}, {DMMotor::Model::MOTOR_DM8009, true, 1, "can2"}, {DMMotor::Model::MOTOR_DM8009, true, 2, "can2"}, {DMMotor::Model::MOTOR_DM8009, true, 4, "can1"}, {DMMotor::Model::MOTOR_DM8009, true, 3, "can1"}, &left_wheel, &right_wheel, {{0.0, 0.0, 0.0, 0.0}, {0.15, 0.15}, {95.0, 95.0}, 0.06, 2.8, {{-0.10979, -1.6001, 0.78512, 2.2581, -0.40374, -0.66799},
+     {-1.2646, -17.956, 8.9175, 25.343, -4.7742, -7.596},
+     {-2.1913, 8.0186, -3.8475, -6.3593, 3.9385, 5.144},
+     {-0.71318, 2.9167, -1.5808, -1.8381, 1.4452, 2.0627},
+     {-3.4358, -51.079, 12.173, 34.473, 4.8763, -18.041},
+     {-0.20842, -4.1053, 0.89717, -2.2569, 2.186, -1.5786},
+     {-1.3145, 1.1092, -19.822, 6.8725, 5.406, 28.055},
+     {-0.014465, -0.76502, -1.4057, 2.5259, -4.6772, 2.0169},
+     {-14.93, 21.07, 21.114, -0.79014, -28.051, -15.297},
+     {-1.8004, 1.443, 3.9677, 1.9182, -4.3711, -3.7576},
+     {-0.10979, 0.78512, -1.6001, -0.66799, -0.40374, 2.2581},
+     {-1.2646, 8.9175, -17.956, -7.596, -4.7742, 25.343},
+     {2.1913, 3.8475, -8.0186, -5.144, -3.9385, 6.3593},
+     {0.71318, 1.5808, -2.9167, -2.0627, -1.4452, 1.8381},
+     {-1.3145, -19.822, 1.1092, 28.055, 5.406, 6.8725},
+     {-0.014465, -1.4057, -0.76502, 2.0169, -4.6772, 2.5259},
+     {-3.4358, 12.173, -51.079, -18.041, 4.8763, 34.473},
+     {-0.20842, 0.89717, -4.1053, -1.5786, 2.186, -2.2569},
+     {-14.93, 21.114, 21.07, -15.297, -28.051, -0.79014},
+     {-1.8004, 3.9677, 1.443, -3.7576, -4.3711, 1.9182},
+     {0.87447, 0.034872, -2.4743, -3.9628, 3.7035, 2.8235},
+     {9.9065, 0.3185, -28.219, -44.647, 42.421, 32.085},
+     {-2.4928, -16.284, -5.7132, 29.928, -13.217, 9.2792},
+     {-0.73506, -6.9054, -2.0118, 12.144, -6.0222, 3.3156},
+     {21.23, 31.986, -2.2762, -93.582, 62.701, -8.6285},
+     {1.6227, 4.7079, -1.7723, -7.8906, 3.915, 1.967},
+     {3.9449, -33.382, -26.739, 45.877, -57.697, 56.566},
+     {0.20191, -0.15029, 1.0817, -2.5143, -3.9071, 2.7456},
+     {-16.372, -180.98, 33.955, 223.58, 50.193, -50.237},
+     {-0.49608, -16.719, 1.3016, 15.998, 9.5137, -2.264},
+     {0.87447, -2.4743, 0.034872, 2.8235, 3.7035, -3.9628},
+     {9.9065, -28.219, 0.3185, 32.085, 42.421, -44.647},
+     {2.4928, 5.7132, 16.284, -9.2792, 13.217, -29.928},
+     {0.73506, 2.0118, 6.9054, -3.3156, 6.0222, -12.144},
+     {3.9449, -26.739, -33.382, 56.566, -57.697, 45.877},
+     {0.20191, 1.0817, -0.15029, 2.7456, -3.9071, -2.5143},
+     {21.23, -2.2762, 31.986, -8.6285, 62.701, -93.582},
+     {1.6227, -1.7723, 4.7079, 1.967, 3.915, -7.8906},
+     {-16.372, 33.955, -180.98, -50.237, 50.193, 223.58},
+     {-0.49608, 1.3016, -16.719, -2.264, 9.5137, 15.998}}});
+
+  static HostData HostData_0(hw, appmgr, cmd, "target_euler", "chassis_data", "fire_notify");
+  static SharedTopic SharedTopic_0(hw, appmgr, "usb_otg_hs_cdc", 2048, 256, {"fire_notify", "target_euler", "chassis_data"});
+  static SharedTopicClient SharedTopicClient_0(hw, appmgr,  "usb_otg_hs_cdc", 1024, 256, { "ahrs_quaternion"});
+static EventBinder event_bind(hw, appmgr, {{"dr16", dr16}, {"cmd", cmd}, {"WheelLeg", Wheelleg},{"gimbal",gimbal},{"launcher",launcher}}, {{{{"dr16", DR16::SwitchPos::DR16_SW_R_POS_TOP, "cmd", CMD::Mode::CMD_OP_CTRL}, {"d16", DR16::SwitchPos::DR16_SW_R_POS_MID, "cmd", CMD::Mode::CMD_AUTO_CTRL}}}, {{{"dr16", DR16::SwitchPos::DR16_SW_R_POS_TOP, "launcher", InfantryLauncher::LauncherEvent::SET_FRICMODE_RELAX},{"dr16", DR16::SwitchPos::DR16_SW_R_POS_MID, "launcher", InfantryLauncher::LauncherEvent::SET_FRICMODE_SAFE},{"dr16", DR16::SwitchPos::DR16_SW_R_POS_BOT, "launcher",InfantryLauncher::LauncherEvent::SET_FRICMODE_READY}}},{{{"dr16", DR16::SwitchPos::DR16_SW_L_POS_TOP, "WheelLeg", Wheelleg::WheellegEvent::SET_MODE_RELAX}, {"dr16", DR16::SwitchPos::DR16_SW_L_POS_MID, "WheelLeg", Wheelleg::WheellegEvent::SET_MODE_RESET},{"dr16", DR16::SwitchPos::DR16_SW_L_POS_BOT, "WheelLeg", Wheelleg::WheellegEvent::SET_MODE_JUMP},{"dr16", DR16::SwitchPos::DR16_SW_R_POS_TOP, "WheelLeg", Wheelleg::WheellegEvent::SET_MODE_RELAX},{"dr16", DR16::Key::KEY_E, "WheelLeg", Wheelleg::WheellegEvent::SET_MODE_STAND},{"dr16", DR16::Key::KEY_R, "WheelLeg", Wheelleg::WheellegEvent::SET_MODE_RESET},{"dr16", DR16::Key::KEY_Q, "WheelLeg", Wheelleg::WheellegEvent::SET_MODE_ROTOR},
+{"dr16", DR16::Key::KEY_V, "WheelLeg", Wheelleg::WheellegEvent::SET_MODE_JUMP}}}});
+  // static SuperPower SuperPower_0(hw, appmgr, "can1", 1024);
+
+  while (true) {
+    appmgr.MonitorAll();
+    Thread::Sleep(1000);
+  }
+}
