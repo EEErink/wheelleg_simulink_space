@@ -22,21 +22,30 @@
 ```
 wheel_leg2026/
 ├── README.md                                    # 本文件
-├── wheelleg_config.txt                          # 配置参数
+├── wheelleg_config.txt                          # 机器人配置参数
 │
 ├── HerKules 2026 轮腿建模&LQR推导/              # ⭐ 主要工作目录
-│   ├── README.md                                # 详细文档
-│   ├── 推导-v2.md                               # 完整动力学推导
-│   ├── compute_lqr.m                            # ★ LQR控制器计算主脚本
-│   ├── step1_define_and_derive.m                # 动力学方程推导
-│   ├── apply_kinematics_v2.m                    # 运动学约束代入
+│   ├── compute_lqr.m                            # ★ LQR控制器计算（主脚本）
+│   ├── simplify_dynamics_v2.m                   # 动力学方程推导与化简
+│   ├── apply_kinematics_v2.m                    # 代入运动学约束
 │   ├── linearize_system_v2.m                    # 系统线性化
+│   ├── get_K_from_leg_lengths.m                 # 根据腿长获取K矩阵
 │   └── *.mat                                    # 计算结果文件
 │
-├── HerKules 2024/                               # 2024年版本
-├── MIRAI仿真/                                   # 仿真相关
-├── MIRAI轮腿K矩阵计算/                          # K矩阵计算
-└── 51U_K矩阵计算/                               # 51U平台K矩阵
+├── HerKules 2024/                               # 2024年版本（旧方案）
+│
+├── MIRAI仿真/                                   # MIRAI平台仿真脚本
+│   ├── MIRAI_K_cal_v1.m                         # K矩阵计算
+│   └── get_k_from_mirai.m                       # 从仿真提取K矩阵
+│
+├── MIRAI轮腿K矩阵计算/                          # MIRAI平台K矩阵计算
+│   ├── MIRAI_K_cal_v1.m                         # K矩阵计算脚本
+│   ├── get_A_length.m                           # 腿长相关计算
+│   └── Func_Cal_ABCD_Array.m                    # A、B、C、D矩阵计算函数
+│
+└── 51U_K矩阵计算/                               # 51U平台K矩阵计算
+    ├── k_cal_51.m                               # 51U平台K矩阵计算
+    └── LQR_K_WBR.m                              # LQR增益计算
 ```
 
 ### 🔧 工作流程
@@ -44,26 +53,16 @@ wheel_leg2026/
 #### Step 1: 动力学方程推导
 基于牛顿-欧拉方法建立各刚体的动力学方程，得到5个最终动力学方程。
 
-**广义坐标** $\mathbf{q}$ (5维):
-$$\mathbf{q} = [X_b^h, \phi, \theta_l, \theta_r, \theta_b]^T$$
-
 #### Step 2: 代入运动学约束
-将运动学约束代入动力学方程，整理为矩阵形式：
-$$M(\mathbf{q}) \cdot \ddot{\mathbf{q}} = B(\mathbf{q}) \cdot \mathbf{u} + \mathbf{g}(\mathbf{q}, \dot{\mathbf{q}})$$
+将运动学约束代入动力学方程，整理为矩阵形式，提取质量矩阵M、控制矩阵B和重力项g。
 
 #### Step 3: 线性化
-在平衡点（直立静止）处线性化，得到状态空间模型：
-$$\dot{\mathbf{x}} = A \mathbf{x} + B_c \mathbf{u}$$
+在平衡点（直立静止）处线性化，得到线性状态空间模型。
 
-**状态向量** $\mathbf{x}$ (10维):
-$$\mathbf{x} = [X_b^h, \dot{X}_b^h, \phi, \dot{\phi}, \theta_l, \dot{\theta}_l, \theta_r, \dot{\theta}_r, \theta_b, \dot{\theta}_b]^T$$
+**状态向量**（10维）：机体位置、速度、偏航角、角速度、左腿角度、角速度、右腿角度、角速度、俯仰角、角速度
 
 #### Step 4: LQR控制器设计
-计算LQR增益矩阵 $K$，使得控制律：
-$$\mathbf{u} = -K \mathbf{x}$$
-
-最小化代价函数：
-$$J = \int_0^\infty (\mathbf{x}^T Q \mathbf{x} + \mathbf{u}^T R \mathbf{u}) dt$$
+计算LQR增益矩阵K，通过加权状态和控制输入来最小化系统能耗，得到最优控制律。
 
 ### 🚀 快速开始
 
@@ -184,21 +183,30 @@ This project provides a complete dynamics derivation, linearization analysis, an
 ```
 wheel_leg2026/
 ├── README.md                                    # This file
-├── wheelleg_config.txt                          # Configuration parameters
+├── wheelleg_config.txt                          # Robot configuration parameters
 │
 ├── HerKules 2026 轮腿建模&LQR推导/              # ⭐ Main working directory
-│   ├── README.md                                # Detailed documentation
-│   ├── 推导-v2.md                               # Complete dynamics derivation
-│   ├── compute_lqr.m                            # ★ LQR controller main script
-│   ├── step1_define_and_derive.m                # Dynamics equation derivation
-│   ├── apply_kinematics_v2.m                    # Kinematics constraint application
+│   ├── compute_lqr.m                            # ★ LQR controller computation (main script)
+│   ├── simplify_dynamics_v2.m                   # Dynamics equation derivation & simplification
+│   ├── apply_kinematics_v2.m                    # Apply kinematics constraints
 │   ├── linearize_system_v2.m                    # System linearization
+│   ├── get_K_from_leg_lengths.m                 # Get K matrix from leg lengths
 │   └── *.mat                                    # Computation result files
 │
-├── HerKules 2024/                               # 2024 version
-├── MIRAI仿真/                                   # Simulation related
-├── MIRAI轮腿K矩阵计算/                          # K matrix computation
-└── 51U_K矩阵计算/                               # 51U platform K matrix
+├── HerKules 2024/                               # 2024 version (legacy approach)
+│
+├── MIRAI仿真/                                   # MIRAI platform simulation scripts
+│   ├── MIRAI_K_cal_v1.m                         # K matrix computation
+│   └── get_k_from_mirai.m                       # Extract K matrix from simulation
+│
+├── MIRAI轮腿K矩阵计算/                          # MIRAI platform K matrix computation
+│   ├── MIRAI_K_cal_v1.m                         # K matrix calculation script
+│   ├── get_A_length.m                           # Leg length related calculations
+│   └── Func_Cal_ABCD_Array.m                    # A, B, C, D matrix calculation functions
+│
+└── 51U_K矩阵计算/                               # 51U platform K matrix computation
+    ├── k_cal_51.m                               # 51U platform K matrix calculation
+    └── LQR_K_WBR.m                              # LQR gain calculation
 ```
 
 ### 🔧 Workflow
@@ -207,19 +215,15 @@ wheel_leg2026/
 Establish dynamics equations for each rigid body using Newton-Euler method, resulting in 5 final dynamics equations.
 
 #### Step 2: Apply Kinematics Constraints
-Substitute kinematics constraints into dynamics equations and organize into matrix form:
-$$M(\mathbf{q}) \cdot \ddot{\mathbf{q}} = B(\mathbf{q}) \cdot \mathbf{u} + \mathbf{g}(\mathbf{q}, \dot{\mathbf{q}})$$
+Substitute kinematics constraints into dynamics equations and organize into matrix form to extract mass matrix M, control matrix B, and gravity term g.
 
 #### Step 3: Linearization
-Linearize at equilibrium point (upright and stationary) to obtain state-space model:
-$$\dot{\mathbf{x}} = A \mathbf{x} + B_c \mathbf{u}$$
+Linearize at equilibrium point (upright and stationary) to obtain linear state-space model.
+
+**State vector** (10-dimensional): body position, velocity, yaw angle, angular velocity, left leg angle, angular velocity, right leg angle, angular velocity, pitch angle, angular velocity
 
 #### Step 4: LQR Controller Design
-Compute LQR gain matrix $K$ such that control law:
-$$\mathbf{u} = -K \mathbf{x}$$
-
-minimizes the cost function:
-$$J = \int_0^\infty (\mathbf{x}^T Q \mathbf{x} + \mathbf{u}^T R \mathbf{u}) dt$$
+Compute LQR gain matrix K by weighting states and control inputs to minimize system energy consumption and obtain optimal control law.
 
 ### 🚀 Quick Start
 
